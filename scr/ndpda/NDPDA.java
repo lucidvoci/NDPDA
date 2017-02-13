@@ -1,5 +1,6 @@
 package ndpdar;
 
+import static java.lang.System.out;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -7,16 +8,23 @@ import java.util.List;
 import ndpdar.PDSymbol.Type;
 
 /**
- *
+ * n-expandable Deep Pushdown Automaton. Automaton that can
+ * be have maximum of n non-input symbols (including bottom symbol #),
+ * non-input can be expended in certain depth (naturally less than n).
+ * 
+ * The hash sets of states, input alphabet and non-input alhabet are
+ * generated based on added rules.
+ * 
  * @author luciedvorakova
  */
 public class NDPDA {
     final private PDSymbol BOTTOM_SYMBOL = new PDSymbol(Type.BOTTOM, null);
-    private HashSet<String> states = new HashSet();
-    private HashSet<PDSymbol> inputAlph = new HashSet();
-    private HashSet<PDSymbol> nonInputAlph = new HashSet();
-    private List<Rule> expansionRules = new ArrayList();
-    private List<Rule> popRules = new ArrayList();
+    final private int n;
+    final private HashSet<String> states = new HashSet();
+    final private HashSet<PDSymbol> inputAlph = new HashSet();
+    final private HashSet<PDSymbol> nonInputAlph = new HashSet();
+    final private List<Rule> expansionRules = new ArrayList();
+    final private List<Rule> popRules = new ArrayList();
     
     
     private HashSet<String> allSymbols = new HashSet();
@@ -29,8 +37,10 @@ public class NDPDA {
     final private DeepPD dpda;
     
     private Boolean settingDone = false;
+    private String curState;
     
-    public NDPDA(String startState, String startPDSym, List<String> endStates){
+    public NDPDA(int n, String startState, String startPDSym, List<String> endStates){
+        this.n = n;
         this.startState = startState;
         this.startPDSym = new PDSymbol(Type.NONTERMINAL, startPDSym);
         this.endStates = endStates;
@@ -68,7 +78,12 @@ public class NDPDA {
             }
             
             numOfNonInputSym = 0;
-        }  
+        }
+        
+        @Override
+        public String toString() {
+            return depth + startState + fromSym.getName() + "->" + endState + String.valueOf(toSymbolString);
+        }
     } 
     
     /**
@@ -100,6 +115,10 @@ public class NDPDA {
         insertValues(rule);
     }
     
+    /**
+    * Parsing rules to create input and non-input alphabet.
+    * @param rule 
+    */
     private void insertValues(Rule rule) {
         states.add(rule.startState);
         states.add(rule.endState);
@@ -116,7 +135,7 @@ public class NDPDA {
             inputAlph.add(rule.fromSym);
             popRules.add(rule);
         }
-
+        settingDone = false;
     }
     
     /**
@@ -144,16 +163,69 @@ public class NDPDA {
         settingDone = true;
     }
     
-    public Boolean simulate(String input) {
+    /**
+    * Top-down parsing using the specified automata. 
+    * If list of rules is given the simulator will follow
+    * it, in other case it will try its best.
+    * @param input String of input character
+    * @param rulesNum list giving order of used rules
+    * @return Returns true if string is accepted by automaton, 
+    *          else returns false.
+    */
+    public Boolean simulate(String input, List<Integer> rulesNum) {
         if (!settingDone){
             automatSettingDone();
         }
+        out.println("Input string: " + input + "\n");
+        curState = startState;
         
-        //
-        // TODO
-        //
+        Rule rule;
+        for(int ruleNum : rulesNum) {
+            rule = expansionRules.get(ruleNum - 1);
+   
+            if(!rule.startState.equals(curState)) {
+                return false;
+            }
+            
+            // Applying the rule would exceed the nomber of non-input
+            // symbols on the pushdown.
+            if(dpda.numOfNonInput() + rule.numOfNonInputSym - 1 > n){
+                return false;
+            }
+            Boolean succ = dpda.expand(rule);
+            if(succ) {
+                out.println("Successfully applied: " + rule);
+                curState = rule.endState;
+            }
+            else {
+                out.println("Application of rule was unsuccessful: " + rule);
+                return false;
+            }
+            //out.println(dpda.toString());
+            //out.println(dpda.nonInputToString());
+        }
         
-        return null;
+        out.println();
+        if(dpda.isExpansionDone()){
+            out.println("Expansion phase done!\n");
+        }
+        else {
+            return false;
+        }
+        out.println(dpda.toString());
+        out.println(dpda.nonInputToString());
+        
+        for(char inputSym : input.toCharArray()){
+            if(!dpda.pop().getName().equals(String.valueOf(inputSym))){
+                return false;
+            }
+        }
+        
+        out.println("Poping phase done!\n");
+        out.println(dpda.toString());
+        out.println(dpda.nonInputToString());
+
+        return dpda.isPDEmpty();
     }
     
     @Override
@@ -188,13 +260,10 @@ public class NDPDA {
             sb.append(a.getName());
         }
         sb.append("}\nR = {\n");
+        int i = 1;
         for(Rule rule : expansionRules){
-            sb.append("\t").append(rule.depth).append(rule.startState).append(rule.fromSym.getName());
-            sb.append(" -> ").append(rule.endState).append(rule.toSymbolString).append("\n");
-        }
-        for(Rule rule : popRules){
-            sb.append("\t").append(rule.depth).append(rule.startState).append(rule.fromSym.getName());
-            sb.append(" -> ").append(rule.endState).append("\n");
+            sb.append(i).append(":\t").append(rule.toString()).append("\n");
+            i++;
         }
         sb.append("}\nF = {");
         prefix = "";

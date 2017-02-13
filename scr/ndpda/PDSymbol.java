@@ -1,7 +1,10 @@
 package ndpdar;
 
 /**
- *
+ * Object to save automat symbols. Saves both name of 
+ * symbol and if it's either terminal, nonterminal or 
+ * speacial bottom symbol.
+ * 
  * @author lucie dvorakova
  */
 
