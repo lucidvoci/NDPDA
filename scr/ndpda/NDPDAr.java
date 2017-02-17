@@ -27,6 +27,11 @@ public class NDPDAr extends NDPDA{
         super(n, startState, startPDSym, endStates);
     }
     
+    /**
+    * Construct that takes as input regular n-expandable DPDA.
+    * 
+    * @param regAuto NDPDA automat that will be converted
+    */
     public NDPDAr(NDPDA regAuto){
         super(regAuto.getN(), regAuto.getStartState() + regAuto.getStartPDSym().getName(), "$", regAuto.getEndStates());
         
@@ -36,6 +41,18 @@ public class NDPDAr extends NDPDA{
         //out.println(this.toString());
     }
 
+    /**
+    * Converts rules od n-expandable DPDA to rules of the reduced DPDA.
+    * Basic rule of conversion:
+    *   If mqA -> pv is a rule, where m is depth, q, p are states, A is
+    * non-input symbol and v is string of non-input and input symbols,
+    * then add m(q;uAz)$ -> (p;uf(v)z)g(v) to reduced DPDA where u,z are strings 
+    * of non-input symbols, m - 1 = |u|, n - m - 1 >= |v|, f() equals function 
+    * getNonInput() and g() equals function getInput().
+    * 
+    * @param rule that will be converted
+    * @param nonInputSymbols non-input symbols of original automaton
+    */
     private void convertRule(Rule rule, HashSet<String> nonInputSymbols){
         List<String> u = new LinkedList();
         List<String> v = new LinkedList();
@@ -45,7 +62,6 @@ public class NDPDAr extends NDPDA{
             v.addAll(allPosNonInput(0, i, "", nonInputSymbols));
         }
         //out.println("Converting rule: " + rule);
-
         String specialSym;
         if(rule.fromSym.getName().equals("#")){
             specialSym = BOTTOM_SYMBOL.getName();
@@ -73,7 +89,17 @@ public class NDPDAr extends NDPDA{
         }
         
     }
-
+    
+    /**
+    * Creates all posible strings of certain lenght. Used
+    * to create all combination of non-input symbols during
+    * rule conversion
+    * @param from lenght of current string
+    * @param to max lenght of string
+    * @param head already build string
+    * @param tail set of symbols used to create string
+    * @return all possible strings
+    */
     private List<String> allPosNonInput(int from, int to, String head, HashSet<String> tail) {
         List<String> pos = new LinkedList();
         if(from == to){
@@ -85,6 +111,12 @@ public class NDPDAr extends NDPDA{
         return pos;
     }
 
+    /**
+    * Converts list of symbols that are both non-input and input
+    * to string of non-input symbols. Excluding #.
+    * @param symbols list of symbols
+    * @return String of non-input symbols
+    */
     private String getNonInput(List<PDSymbol> symbols) {
         StringBuilder sb = new StringBuilder();
         for(PDSymbol sym : symbols){
@@ -95,6 +127,12 @@ public class NDPDAr extends NDPDA{
         return sb.toString();
     }
 
+    /**
+    * Converts list of symbols that are both non-input and input
+    * to string of nput symbols. Including #.
+    * @param symbols list of symbols
+    * @return String of input symbols
+    */
     private String getInput(List<PDSymbol> symbols) {
         StringBuilder sb = new StringBuilder();
         for(PDSymbol sym : symbols){

@@ -49,7 +49,9 @@ public class NDPDA {
         dpda = new DeepPD(this.startPDSym);
         nonInputAlph.add(BOTTOM_SYMBOL);
     }
-
+    /**
+    * Structure of individual rules.
+    */
     public class Rule{
         final int depth;
         final String startState;
@@ -172,12 +174,18 @@ public class NDPDA {
         if (!settingDone){
             automatSettingDone();
         }
-        out.println("Input string: " + input + "\n");
+        out.println("\nInput string: " + input + "\n");
         curState = startState;
         
         Rule rule;
         for(int ruleNum : rulesNum) {
-            rule = expansionRules.get(ruleNum - 1);
+            if(expansionRules.size() > ruleNum - 1  && ruleNum > 0) {
+                rule = expansionRules.get(ruleNum - 1);
+            }
+            else {
+               err.println("Rule number " + ruleNum + " doesn't exist");
+               return false;
+            }
    
             if(!rule.startState.equals(curState)) {
                 err.println("Rule start state " + rule.startState + " doesn't match with current state " + curState + ".");
@@ -199,8 +207,8 @@ public class NDPDA {
                 err.println("Application of rule was unsuccessful: " + rule);
                 return false;
             }
-            out.println(dpda.toString());
-            out.println(dpda.nonInputToString());
+            //out.println(dpda.toString());
+            //out.println(dpda.nonInputToString());
         }
         
         out.println();
@@ -210,8 +218,8 @@ public class NDPDA {
         else {
             return false;
         }
-        out.println(dpda.toString());
-        out.println(dpda.nonInputToString());
+        //out.println(dpda.toString());
+        //out.println(dpda.nonInputToString());
         
         for(char inputSym : input.toCharArray()){
             if(!dpda.pop().getName().equals(String.valueOf(inputSym))){
@@ -221,8 +229,8 @@ public class NDPDA {
         }
         
         out.println("Poping phase done!\n");
-        out.println(dpda.toString());
-        out.println(dpda.nonInputToString());
+        //out.println(dpda.toString());
+        //out.println(dpda.nonInputToString());
         
         if(!endStates.contains(curState)){
             err.println(curState + " is not an end state.");
@@ -282,6 +290,9 @@ public class NDPDA {
         return sb.toString();
     }
     
+    /*
+    *   GETTERS
+    */
     public int getN() {
         return n;
     }
