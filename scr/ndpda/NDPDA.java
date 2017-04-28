@@ -58,11 +58,11 @@ public class NDPDA {
         final String endState;
         final PDSymbol fromSym;
         final List<PDSymbol> toSymbols = new LinkedList();
-        final char[] toSymbolString;
+        final ArrayList<String>  toSymbolString;
         
         int numOfNonInputSym = 0;
         
-        public Rule(int depth, String startState, String endState, String fromSym, String toSymbolsString) {
+        public Rule(int depth, String startState, String endState, String fromSym, ArrayList<String> toSymbolsString) {
             this.depth = depth;
             this.startState = startState;
             this.endState = endState;
@@ -73,13 +73,13 @@ public class NDPDA {
             else {
                 this.fromSym = new PDSymbol(Type.NONTERMINAL, fromSym); 
             }
-            this.toSymbolString = toSymbolsString.toCharArray();
+            this.toSymbolString = toSymbolsString;
             numOfNonInputSym = 0;
         }
         
         @Override
         public String toString() {
-            return depth + startState + fromSym.getName() + "->" + endState + String.valueOf(toSymbolString);
+            return depth + startState + fromSym.getName() + "->" + endState + myToString(toSymbolString);
         }
     } 
     
@@ -91,12 +91,12 @@ public class NDPDA {
      * @param fromSym Non-input symbol, that will be expanded
      * @param toSymbols Symbols replacing the expanded non-iput symbol
     */
-    public void addRule(int depth, String startState,  String fromSym, String endState, String toSymbols) {
+    public void addRule(int depth, String startState,  String fromSym, String endState, ArrayList<String>  toSymbols) {
         Rule rule = new Rule(depth, startState, endState, fromSym, toSymbols);
         insertValues(rule);
     }
     
-    public void addRule(String startState,  String fromSym, String endState, String toSymbols) {
+    public void addRule(String startState,  String fromSym, String endState, ArrayList<String>  toSymbols) {
         Rule rule = new Rule(1, startState, endState, fromSym, toSymbols);
         insertValues(rule);
     }
@@ -122,8 +122,8 @@ public class NDPDA {
         
         nonInputSymbols.add(rule.fromSym.getName());
         nonInputAlph.add(rule.fromSym);
-        for(char sym : rule.toSymbolString) {
-            allSymbols.add(String.valueOf(sym));
+        for(String sym : rule.toSymbolString) {
+            allSymbols.add(sym);
         }
         expansionRules.add(rule);
 
@@ -143,18 +143,17 @@ public class NDPDA {
             }
         }
         for(Rule rule : expansionRules){
-            for(char sym : rule.toSymbolString){
-                String symString = String.valueOf(sym);
-                if(nonInputSymbols.contains(symString)) {
-                    rule.toSymbols.add(new PDSymbol(Type.NONTERMINAL, symString));
+            for(String sym : rule.toSymbolString){
+                if(nonInputSymbols.contains(sym)) {
+                    rule.toSymbols.add(new PDSymbol(Type.NONTERMINAL, sym));
                     rule.numOfNonInputSym++;
                 }
-                else if(sym == '#') {
+                else if(sym.equals("#")) {
                     rule.toSymbols.add(BOTTOM_SYMBOL);
                     rule.numOfNonInputSym++;
                 }
                 else {
-                    rule.toSymbols.add(new PDSymbol(Type.TERMINAL, symString));
+                    rule.toSymbols.add(new PDSymbol(Type.TERMINAL, sym));
                 }
             }
         }
@@ -175,6 +174,7 @@ public class NDPDA {
             automatSettingDone();
         }
         out.println("\nInput string: " + input + "\n");
+        out.println(dpda.toString());
         curState = startState;
         
         Rule rule;
@@ -207,7 +207,7 @@ public class NDPDA {
                 err.println("Application of rule was unsuccessful: " + rule);
                 return false;
             }
-            //out.println(dpda.toString());
+            out.println(dpda.toString());
             //out.println(dpda.nonInputToString());
         }
         
@@ -221,13 +221,21 @@ public class NDPDA {
         //out.println(dpda.toString());
         //out.println(dpda.nonInputToString());
         
-        for(char inputSym : input.toCharArray()){
-            if(!dpda.pop().getName().equals(String.valueOf(inputSym))){
-                err.println(input + " doesn't mach symbols on stack.");
-                return false;
+        int i = 0;
+        char[] inputArray = input.toCharArray();
+        while(!dpda.isPDEmpty()){
+            String val = dpda.pop().getName();
+            for(char sym : val.toCharArray()) {
+                while (Character.isWhitespace(inputArray[i])) {
+                    i++;
+                }
+                if(sym != inputArray[i]){
+                    err.println(inputArray[i] + " doesn't mach symbol " + sym + " on stack.");
+                    return false;
+                }
+                i++;
             }
         }
-        
         out.println("Poping phase done!\n");
         //out.println(dpda.toString());
         //out.println(dpda.nonInputToString());
@@ -289,7 +297,14 @@ public class NDPDA {
          sb.append("}");
         return sb.toString();
     }
-    
+    private String myToString(ArrayList<String> al){
+        StringBuilder sb = new StringBuilder();
+        for(String s : al) {
+            sb.append(" ");
+            sb.append(s);
+        }
+        return sb.toString();
+    }
     /*
     *   GETTERS
     */
